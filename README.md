@@ -1,7 +1,6 @@
-# AppGuard
-Interview question
+# AppGuard Interview Question
 
-Description:
+## Description:
 Write a multithreaded program that:
 1. Generates N random integers between 0-9
 2. Counts how many times each integer was repeated
