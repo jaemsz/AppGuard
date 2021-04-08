@@ -1,17 +1,23 @@
 #include "COutput.h"
+#include "CCriticalSectionLock.h"
 #include <iostream>
+
+const int COutput::m_FrequencyVectorMaxSize = 10;
 
 /*
 *   COutput default constructor initializes
 *   member variables
 */
-COutput::COutput()
+COutput::COutput() :
+    m_nFrequencyVectorSize(m_FrequencyVectorMaxSize)
 {
     InitializeCriticalSection(&m_cs);
 
-    // Frequency vector should hold up to 10 
-    // values:  0 to 9
-    m_vFrequency = { 0,0,0,0,0,0,0,0,0,0 };
+    // Frequency vector should hold up to 10 elements
+    for (int i = 0; i < m_FrequencyVectorMaxSize; i++)
+    {
+        m_vFrequency.push_back(0);
+    }
 }
 
 /*
@@ -37,12 +43,9 @@ bool COutput::update(int nIndex)
     }
 
     // This object can be called from multiple threads
-    // so we sychronize access to shared data with a 
-    // critical section
-    EnterCriticalSection(&m_cs);
-    // incrememt count at the index
-    m_vFrequency[nIndex] += 1;
-    LeaveCriticalSection(&m_cs);
+    // so we sychronize access to shared data with an 
+    // interlocked function
+    InterlockedIncrement(&m_vFrequency[nIndex]);
 
     return true;
 }
@@ -56,7 +59,7 @@ void COutput::display(void)
     // This object can be called from multiple threads
     // so we sychronize access to shared data with a 
     // critical section
-    EnterCriticalSection(&m_cs);
+    CCriticalSectionLock lock(&m_cs);
 
     int i = 0;
     for (int nVal : m_vFrequency)
@@ -64,8 +67,6 @@ void COutput::display(void)
         std::cout << "index = " << i << " : " << nVal << std::endl;
         i++;
     }
-
-    LeaveCriticalSection(&m_cs);
 }
 
 /*
@@ -78,7 +79,7 @@ int COutput::sumFreq(void)
     // This object can be called from multiple threads
     // so we sychronize access to shared data with a 
     // critical section
-    EnterCriticalSection(&m_cs);
+    CCriticalSectionLock lock(&m_cs);
 
     int nAccum = 0;
     for (int nVal : m_vFrequency)
@@ -86,6 +87,5 @@ int COutput::sumFreq(void)
         nAccum += nVal;
     }
 
-    LeaveCriticalSection(&m_cs);
     return nAccum;
 }
