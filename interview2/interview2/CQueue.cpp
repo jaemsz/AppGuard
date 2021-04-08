@@ -1,4 +1,5 @@
 #include "CQueue.h"
+#include "CCriticalSectionLock.h"
 
 // queue size
 const int CQueue::m_nQueueMaxSize = 10;
@@ -12,7 +13,10 @@ CQueue::CQueue() :
     m_nCount(0),
     m_nMaxValues(10)
 {
-    InitializeCriticalSection(&m_cs);
+    //InitializeCriticalSection(&m_cs);
+
+    // On my machine I get beter performance when I specifiy a spin count
+    InitializeCriticalSectionAndSpinCount(&m_cs, 1500);
 }
 
 /*
@@ -26,7 +30,8 @@ CQueue::CQueue(int nMaxValues) :
     m_nCount(0), 
     m_nMaxValues(nMaxValues)
 {
-    InitializeCriticalSection(&m_cs);
+    // On my machine I get beter performance when I specifiy a spin count
+    InitializeCriticalSectionAndSpinCount(&m_cs, 1500);
 }
 
 /*
@@ -52,14 +57,13 @@ QueueRet CQueue::push(int val)
     // This object can be called from multiple threads
     // so we sychronize access to shared data with a 
     // critical section
-    EnterCriticalSection(&m_cs);
+    CCriticalSectionLock lock(&m_cs);
 
     if (m_nCount == m_nMaxValues)
     {
         // N values have been seen.
         // Save this state to m_bTerm
         m_bTerm = true;
-        LeaveCriticalSection(&m_cs);
         // Let the caller terminate
         return QueueRet::term;
     }
@@ -71,12 +75,10 @@ QueueRet CQueue::push(int val)
         // Increment our counter
         m_nCount++;
 
-        LeaveCriticalSection(&m_cs);
         // Let the caller know that val was added
         return QueueRet::ok;
     }
 
-    LeaveCriticalSection(&m_cs);
     return QueueRet::full;
 }
 
@@ -94,7 +96,7 @@ QueueRet CQueue::pop(int& val)
     // This object can be called from multiple threads
     // so we sychronize access to shared data with a 
     // critical section
-    EnterCriticalSection(&m_cs);
+    CCriticalSectionLock lock(&m_cs);
 
     if (m_queue.empty())
     {
@@ -102,12 +104,11 @@ QueueRet CQueue::pop(int& val)
         {
             // The queue has seen N values and there
             // are no more items to process on the queue
-            LeaveCriticalSection(&m_cs);
             // Let the caller terminate
             return QueueRet::term;
         }
 
-        LeaveCriticalSection(&m_cs);
+        //LeaveCriticalSection(&m_cs);
         // Tell the caller that the queue is empty
         return QueueRet::empty;
     }
@@ -117,7 +118,6 @@ QueueRet CQueue::pop(int& val)
     val = m_queue.front();
     m_queue.pop();
 
-    LeaveCriticalSection(&m_cs);
     // Let the caller know that pop succeeded
     return QueueRet::ok;
 }
