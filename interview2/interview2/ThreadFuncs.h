@@ -12,10 +12,11 @@
 *   @param hProducerEvent : Event object that tells producer there is work to do
 *   @param hConsumerEvent : Event object that tells consumer there is work to do
 */
-void producer(CQueue& queue, HANDLE& hProducerEvent, HANDLE& hConsumerEvent)
+void producer(CQueue& queue, HANDLE hProducerEvent, HANDLE hConsumerEvent)
 {
     QueueRet action = QueueRet::ok;
     bool bTerm = false;
+    DWORD dwWait = 0;
 
     // Initialize random number generator
     srand((unsigned int)time(NULL));
@@ -43,7 +44,15 @@ void producer(CQueue& queue, HANDLE& hProducerEvent, HANDLE& hConsumerEvent)
         case QueueRet::full:
             // queue is full.  Consumer will signal the 
             // producer when the queue is not full.
-            WaitForSingleObject(hProducerEvent, INFINITE);
+            dwWait = WaitForSingleObject(hProducerEvent, INFINITE);
+            if (dwWait != WAIT_OBJECT_0)
+            {
+                // WaitForSingleObject should return WAIT_OBJECT_0 normally,
+                // but there is a case where it may return something else,
+                // so we handle it by terminating the thread
+                bTerm = true;
+                SetEvent(hConsumerEvent);
+            }
             break;
         case QueueRet::term:
             // queue has seen N random values, so producer
@@ -67,11 +76,12 @@ void producer(CQueue& queue, HANDLE& hProducerEvent, HANDLE& hConsumerEvent)
 *   @param hProducerEvent : Event object that tells producer there is work to do
 *   @param hConsumerEvent : Event object that tells consumer there is work to do
 */
-void consumer(CQueue& queue, COutput& output, HANDLE& hProducerEvent, HANDLE& hConsumerEvent)
+void consumer(CQueue& queue, COutput& output, HANDLE hProducerEvent, HANDLE hConsumerEvent)
 {
     QueueRet action = QueueRet::ok;
     bool bTerm = false;
     int val = 0;
+    DWORD dwWait = 0;
 
     while (true)
     {
@@ -97,7 +107,14 @@ void consumer(CQueue& queue, COutput& output, HANDLE& hProducerEvent, HANDLE& hC
         case QueueRet::empty:
             // The queue is empty. The producer will signal the
             // consumer when the queue has items for processing.
-            WaitForSingleObject(hConsumerEvent, INFINITE);
+            dwWait = WaitForSingleObject(hConsumerEvent, INFINITE);
+            if (dwWait != WAIT_OBJECT_0)
+            {
+                // WaitForSingleObject should return WAIT_OBJECT_0 normally,
+                // but there is a case where it may return something else,
+                // so we handle it by terminating the thread
+                bTerm = true;
+            }
             break;
         case QueueRet::term:
             // queue has seen N random values, so consumer
