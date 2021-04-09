@@ -17,10 +17,10 @@ int main()
     HANDLE hConsumerEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
 
     // Create 2 producer threads and 2 consumer threads
-    std::thread t1(producer, std::ref(queue), std::ref(hConsumerEvent), std::ref(hProducerEvent));
-    std::thread t2(producer, std::ref(queue), std::ref(hConsumerEvent), std::ref(hProducerEvent));
-    std::thread t3(consumer, std::ref(queue), std::ref(output), std::ref(hConsumerEvent), std::ref(hProducerEvent));
-    std::thread t4(consumer, std::ref(queue), std::ref(output), std::ref(hConsumerEvent), std::ref(hProducerEvent));
+    std::thread t1(producer, std::ref(queue), hConsumerEvent, hProducerEvent);
+    std::thread t2(producer, std::ref(queue), hConsumerEvent, hProducerEvent);
+    std::thread t3(consumer, std::ref(queue), std::ref(output), hConsumerEvent, hProducerEvent);
+    std::thread t4(consumer, std::ref(queue), std::ref(output), hConsumerEvent, hProducerEvent);
 
     // Wait for threads to return
     t1.join();
