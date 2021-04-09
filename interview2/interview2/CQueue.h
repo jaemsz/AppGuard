@@ -17,9 +17,10 @@ enum class QueueRet
 */
 class CQueue
 {
-public:
     // The queues max size.  It should be 10.
     static const int m_nQueueMaxSize;
+
+public:
 
     CQueue();
     CQueue(int nMaxValues);
@@ -28,8 +29,12 @@ public:
     QueueRet push(int val);
     QueueRet pop(int& val);
 
+    void setTerm(void);
+    bool getTerm(void);
+
 private:
     bool                m_bTerm;
+    bool                m_bUnexpectedTerm;
     int                 m_nMaxValues;   // This is N
     int                 m_nCount;
     std::queue<int>     m_queue;
