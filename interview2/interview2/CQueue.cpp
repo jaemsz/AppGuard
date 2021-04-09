@@ -10,6 +10,7 @@ const int CQueue::m_nQueueMaxSize = 10;
 */
 CQueue::CQueue() :
     m_bTerm(false),
+    m_bUnexpectedTerm(false),
     m_nCount(0),
     m_nMaxValues(10)
 {
@@ -27,6 +28,7 @@ CQueue::CQueue() :
 */
 CQueue::CQueue(int nMaxValues) : 
     m_bTerm(false),
+    m_bUnexpectedTerm(false),
     m_nCount(0), 
     m_nMaxValues(nMaxValues)
 {
@@ -58,6 +60,11 @@ QueueRet CQueue::push(int val)
     // so we sychronize access to shared data with a 
     // critical section
     CCriticalSectionLock lock(&m_cs);
+
+    if (m_bUnexpectedTerm)
+    {
+        return QueueRet::term;
+    }
 
     if (m_nCount == m_nMaxValues)
     {
@@ -98,17 +105,21 @@ QueueRet CQueue::pop(int& val)
     // critical section
     CCriticalSectionLock lock(&m_cs);
 
+    if (m_bUnexpectedTerm)
+    {
+        return QueueRet::term;
+    }
+
     if (m_queue.empty())
     {
         if (m_bTerm)
         {
             // The queue has seen N values and there
-            // are no more items to process on the queue
+            // are no more items to process on the queue.
             // Let the caller terminate
             return QueueRet::term;
         }
 
-        //LeaveCriticalSection(&m_cs);
         // Tell the caller that the queue is empty
         return QueueRet::empty;
     }
@@ -120,4 +131,14 @@ QueueRet CQueue::pop(int& val)
 
     // Let the caller know that pop succeeded
     return QueueRet::ok;
+}
+
+void CQueue::setTerm(void)
+{
+    m_bUnexpectedTerm = true;
+}
+
+bool CQueue::getTerm(void)
+{
+    return m_bUnexpectedTerm;
 }
