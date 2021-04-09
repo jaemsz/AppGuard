@@ -116,7 +116,7 @@ void consumer(CQueue& queue, COutput& output, HANDLE hProducerEvent, HANDLE hCon
                 // so we handle it by terminating the thread
                 bTerm = true;
                 queue.setTerm();
-                SetEvent(hConsumerEvent);
+                SetEvent(hProducerEvent);
             }
             break;
         case QueueRet::term:
