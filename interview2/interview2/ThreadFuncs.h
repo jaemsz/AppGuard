@@ -51,6 +51,7 @@ void producer(CQueue& queue, HANDLE hProducerEvent, HANDLE hConsumerEvent)
                 // but there is a case where it may return something else,
                 // so we handle it by terminating the thread
                 bTerm = true;
+                queue.setTerm();
                 SetEvent(hConsumerEvent);
             }
             break;
@@ -114,6 +115,8 @@ void consumer(CQueue& queue, COutput& output, HANDLE hProducerEvent, HANDLE hCon
                 // but there is a case where it may return something else,
                 // so we handle it by terminating the thread
                 bTerm = true;
+                queue.setTerm();
+                SetEvent(hConsumerEvent);
             }
             break;
         case QueueRet::term:
